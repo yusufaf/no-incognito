@@ -10,7 +10,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "lint": "web-ext lint -s extension",
     "start": "web-ext run -s extension",
     "build": "web-ext build -s extension -a dist --overwrite-dest",
