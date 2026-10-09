@@ -1,0 +1,74 @@
+/*
+ * No Incognito: hide the "open in private window" entry points.
+ *
+ * Every group is hidden unless its `no-incognito.show-*` pref is true. A pref
+ * that does not exist counts as false, so this also works as a plain
+ * userChrome.css in Firefox (with toolkit.legacyUserProfileCustomizations.stylesheets).
+ *
+ * One selector per rule on purpose: if a selector in a list fails to parse,
+ * the whole rule is dropped.
+ */
+
+/* Group: File menu and app menu */
+@media not (-moz-pref("no-incognito.show-window-menus")) {
+  #menu_newPrivateWindow {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-window-menus")) {
+  #appMenu-new-private-window-button2 {
+    display: none !important;
+  }
+}
+
+/* Group: link context menu */
+@media not (-moz-pref("no-incognito.show-link-context")) {
+  #context-openlinkprivate {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-link-context")) {
+  #context-searchselect-private {
+    display: none !important;
+  }
+}
+
+/* Group: bookmarks, history and sidebar context menus */
+@media not (-moz-pref("no-incognito.show-places-context")) {
+  #placesContext_open\:newprivatewindow {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-places-context")) {
+  #sidebar-history-context-open-in-private-window {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-places-context")) {
+  #sidebar-synced-tabs-context-open-in-private-window {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-places-context")) {
+  #sidebar-opentabs-context-open-in-private-window {
+    display: none !important;
+  }
+}
+
+@media not (-moz-pref("no-incognito.show-places-context")) {
+  #sidebar-bookmarks-context-open-in-private-window {
+    display: none !important;
+  }
+}
+
+/* Group: synced tabs (Firefox View) */
+@media not (-moz-pref("no-incognito.show-synced-tabs")) {
+  #syncedTabsOpenSelectedInPrivateWindow {
+    display: none !important;
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "property": "no-incognito.show-window-menus",
+    "label": "Show \"New Private Window\" in the File menu and app menu",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "no-incognito.show-link-context",
+    "label": "Show \"Open Link in New Private Window\" in the link context menu",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "no-incognito.show-places-context",
+    "label": "Show \"Open in New Private Window\" in bookmark, history and sidebar menus",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "no-incognito.show-synced-tabs",
+    "label": "Show \"Open in New Private Window\" for synced tabs",
+    "type": "checkbox",
+    "defaultValue": false
+  }
+]
