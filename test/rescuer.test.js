@@ -285,6 +285,51 @@ describe("reopening", () => {
     expect(api.tabs.remove).toHaveBeenCalledWith([11, 13]);
   });
 
+  it("does not close a duplicate tab whose reopen failed", async () => {
+    const { api } = makeApi({
+      windows: [normalWin(2, { focused: true }), privateWin(1)],
+      tabs: {
+        1: [
+          { id: 11, ...tab("https://a.example/") },
+          { id: 12, ...tab("https://a.example/", { active: false }) },
+        ],
+      },
+    });
+    api.tabs.create
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("Illegal URL"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.rescueWindow(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.tabs.remove).toHaveBeenCalledWith([11]);
+  });
+
+  it("activates the first tab that opens when an earlier one fails", async () => {
+    const { api } = makeApi({
+      windows: [normalWin(2, { focused: true }), privateWin(1)],
+      tabs: { 1: [tab("https://a.example/"), tab("https://b.example/", { active: false })] },
+    });
+    api.tabs.create
+      .mockRejectedValueOnce(new Error("Illegal URL"))
+      .mockResolvedValueOnce(undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.rescueWindow(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.tabs.create).toHaveBeenLastCalledWith({
+      windowId: 2,
+      url: "https://b.example/",
+      active: true,
+    });
+  });
+
   it("still closes the private window when focusing the target fails", async () => {
     const { api } = makeApi({
       windows: [normalWin(2, { focused: true }), privateWin(1)],

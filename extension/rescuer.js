@@ -82,13 +82,16 @@ export function createRescuer(api) {
     return pending;
   }
 
-  // Adds each reopened URL to `opened` and returns how many could not be reopened.
+  // Counts each reopened URL in `opened` (url -> times) and returns how many
+  // could not be reopened. The first URL that succeeds becomes the active tab.
   async function openUrls(windowId, urls, { activateFirst }, opened) {
     let failed = 0;
-    for (const [index, url] of urls.entries()) {
+    let activate = activateFirst;
+    for (const url of urls) {
       try {
-        await api.tabs.create({ windowId, url, active: activateFirst && index === 0 });
-        opened.add(url);
+        await api.tabs.create({ windowId, url, active: activate });
+        activate = false;
+        opened.set(url, (opened.get(url) ?? 0) + 1);
       } catch (error) {
         failed += 1;
         console.warn("No Incognito: could not reopen", url, error);
@@ -112,7 +115,7 @@ export function createRescuer(api) {
 
       let target;
       let failed = 0;
-      const opened = new Set();
+      const opened = new Map();
       if (plan.createWindow) {
         try {
           target = await startCreate(plan.open[0]);
@@ -128,7 +131,7 @@ export function createRescuer(api) {
           return;
         }
         // The first URL is already the new window's active tab.
-        if (plan.open.length > 0) opened.add(plan.open[0]);
+        if (plan.open.length > 0) opened.set(plan.open[0], 1);
         failed = await openUrls(
           target.id,
           plan.open.slice(1),
@@ -147,12 +150,19 @@ export function createRescuer(api) {
       }
       if (failed > 0) {
         // Losing a tab is worse than leaving the private window open. Close only
-        // the tabs that were copied so a later rescue retries just the failures.
-        const copied = tabs.filter((t) => opened.has(t.url)).map((t) => t.id);
+        // the tabs that were copied, so the next sweep retries just the failures.
+        const copied = tabs
+          .filter((t) => {
+            const left = opened.get(t.url) ?? 0;
+            if (left === 0) return false;
+            opened.set(t.url, left - 1);
+            return true;
+          })
+          .map((t) => t.id);
         try {
           await api.tabs.remove(copied);
-        } catch {
-          // Already closed.
+        } catch (error) {
+          console.warn("No Incognito: could not close the copied tabs", error);
         }
         return;
       }
