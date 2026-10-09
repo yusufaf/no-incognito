@@ -12,7 +12,7 @@ It is built for self-control, not for locking down someone else's browser. Anyon
 When a private window appears it waits for the window's real URL (up to 20 seconds, for slow pages), then:
 
 1. makes sure a normal window exists, creating one first if not, because closing the last window quits the browser;
-2. opens the private window's URLs there (only `http` and `https` pages are reopened; anything else, such as `about:` or `file:` pages, is not);
+2. opens the private window's URLs there (only `http` and `https` pages are reopened; anything else, such as `about:` or `file:` pages, is not, and is lost when the private window closes);
 3. closes the private window.
 
 You will see the private window for a moment: Firefox gives extensions no way to stop a window from opening, only to react to it.

@@ -82,12 +82,13 @@ export function createRescuer(api) {
     return pending;
   }
 
-  // Returns how many URLs could not be reopened.
-  async function openUrls(windowId, urls, { activateFirst }) {
+  // Adds each reopened URL to `opened` and returns how many could not be reopened.
+  async function openUrls(windowId, urls, { activateFirst }, opened) {
     let failed = 0;
     for (const [index, url] of urls.entries()) {
       try {
         await api.tabs.create({ windowId, url, active: activateFirst && index === 0 });
+        opened.add(url);
       } catch (error) {
         failed += 1;
         console.warn("No Incognito: could not reopen", url, error);
@@ -111,6 +112,7 @@ export function createRescuer(api) {
 
       let target;
       let failed = 0;
+      const opened = new Set();
       if (plan.createWindow) {
         try {
           target = await startCreate(plan.open[0]);
@@ -126,15 +128,34 @@ export function createRescuer(api) {
           return;
         }
         // The first URL is already the new window's active tab.
-        failed = await openUrls(target.id, plan.open.slice(1), { activateFirst: false });
+        if (plan.open.length > 0) opened.add(plan.open[0]);
+        failed = await openUrls(
+          target.id,
+          plan.open.slice(1),
+          { activateFirst: false },
+          opened,
+        );
       } else {
         target = normal.find((w) => w.focused) ?? normal[normal.length - 1];
-        failed = await openUrls(target.id, plan.open, { activateFirst: true });
+        failed = await openUrls(target.id, plan.open, { activateFirst: true }, opened);
       }
 
-      await api.windows.update(target.id, { focused: true });
-      // Losing a tab is worse than leaving the private window open.
-      if (failed > 0) return;
+      try {
+        await api.windows.update(target.id, { focused: true });
+      } catch {
+        // Focusing is cosmetic; the tabs are already reopened.
+      }
+      if (failed > 0) {
+        // Losing a tab is worse than leaving the private window open. Close only
+        // the tabs that were copied so a later rescue retries just the failures.
+        const copied = tabs.filter((t) => opened.has(t.url)).map((t) => t.id);
+        try {
+          await api.tabs.remove(copied);
+        } catch {
+          // Already closed.
+        }
+        return;
+      }
       try {
         await api.windows.remove(privateWindowId);
       } catch {

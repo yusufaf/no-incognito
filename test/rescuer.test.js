@@ -49,6 +49,7 @@ function makeApi({
       create: vi.fn(async (options) => {
         order.push(`tab:${options.url}`);
       }),
+      remove: vi.fn(async () => {}),
       onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
     },
     storage: {
@@ -258,12 +259,21 @@ describe("reopening", () => {
     ]);
   });
 
-  it("keeps the private window open when a URL could not be reopened", async () => {
+  it("keeps the private window open but closes only the copied tabs when a URL fails", async () => {
     const { api } = makeApi({
       windows: [normalWin(2, { focused: true }), privateWin(1)],
-      tabs: { 1: [tab("https://a.example/"), tab("https://b.example/", { active: false })] },
+      tabs: {
+        1: [
+          { id: 11, ...tab("https://a.example/") },
+          { id: 12, ...tab("https://b.example/", { active: false }) },
+          { id: 13, ...tab("https://c.example/", { active: false }) },
+        ],
+      },
     });
-    api.tabs.create.mockRejectedValueOnce(new Error("Illegal URL"));
+    api.tabs.create
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("Illegal URL"))
+      .mockResolvedValueOnce(undefined);
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const rescuer = createRescuer(api);
 
@@ -272,6 +282,22 @@ describe("reopening", () => {
     await done;
 
     expect(api.windows.remove).not.toHaveBeenCalled();
+    expect(api.tabs.remove).toHaveBeenCalledWith([11, 13]);
+  });
+
+  it("still closes the private window when focusing the target fails", async () => {
+    const { api } = makeApi({
+      windows: [normalWin(2, { focused: true }), privateWin(1)],
+      tabs: { 1: [tab("https://a.example/")] },
+    });
+    api.windows.update.mockRejectedValueOnce(new Error("No window with id: 2"));
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.rescueWindow(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.windows.remove).toHaveBeenCalledWith(1);
   });
 });
 
