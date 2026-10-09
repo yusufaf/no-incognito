@@ -1,0 +1,26 @@
+{
+  "name": "no-incognito",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Disable private browsing in Firefox and Zen Browser: a WebExtension that closes private windows and a Zen mod that hides the menu entries.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "lint": "web-ext lint -s extension",
+    "start": "web-ext run -s extension",
+    "build": "web-ext build -s extension -a dist --overwrite-dest",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "husky": "9.1.7",
+    "vitest": "5.0.3",
+    "web-ext": "10.7.0"
+  }
+}
