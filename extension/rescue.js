@@ -8,3 +8,10 @@ export function isRescuableUrl(url) {
     return false;
   }
 }
+
+export function planRescue(urls, hasNormalWindow) {
+  return {
+    open: urls.filter(isRescuableUrl),
+    createWindow: !hasNormalWindow,
+  };
+}
