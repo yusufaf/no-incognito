@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No Incognito setup</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fbfbfe;
+        --fg: #15141a;
+        --muted: #5b5b66;
+        --accent: #6b3fa0;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1b22;
+          --fg: #fbfbfe;
+          --muted: #b5b5c0;
+          --accent: #b78fe8;
+        }
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1rem;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+      main {
+        max-width: 38rem;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.5rem;
+        color: var(--accent);
+      }
+      p,
+      li {
+        color: var(--muted);
+      }
+      code {
+        color: var(--fg);
+      }
+      [hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="access">
+        <h1>One more step</h1>
+        <p>
+          Firefox only lets extensions see private windows if you allow it. Without that,
+          No Incognito cannot close them.
+        </p>
+        <ol>
+          <li>Open <code>about:addons</code> and choose No Incognito.</li>
+          <li>Set <strong>Run in Private Windows</strong> to <strong>Allow</strong>.</li>
+        </ol>
+      </section>
+
+      <section id="permanent" hidden>
+        <h1>Private browsing is always on</h1>
+        <p>
+          Firefox is set to always use private browsing
+          (<code>browser.privatebrowsing.autostart</code>), so every window is private and
+          there is no normal window to move your tabs to. No Incognito stopped instead of
+          closing windows in a loop.
+        </p>
+        <p>
+          Turn off "Always use private browsing mode" in Settings → Privacy &amp; Security →
+          History, then restart.
+        </p>
+      </section>
+    </main>
+    <script src="onboarding.js"></script>
+  </body>
+</html>
