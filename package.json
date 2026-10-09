@@ -1,6 +1,6 @@
 {
   "name": "no-incognito",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Disable private browsing in Firefox and Zen Browser: a WebExtension that closes private windows and a Zen mod that hides the menu entries.",
