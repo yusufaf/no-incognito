@@ -229,7 +229,67 @@ describe("rescueWindow", () => {
   });
 });
 
+describe("reopening", () => {
+  it("only activates the first URL when it creates the new window", async () => {
+    const { api } = makeApi({
+      windows: [privateWin(1)],
+      tabs: {
+        1: [
+          tab("https://a.example/"),
+          tab("https://b.example/", { active: false }),
+          tab("https://c.example/", { active: false }),
+        ],
+      },
+    });
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.rescueWindow(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.windows.create).toHaveBeenCalledWith({
+      incognito: false,
+      url: "https://a.example/",
+    });
+    const opened = api.tabs.create.mock.calls.map(([options]) => options);
+    expect(opened).toEqual([
+      { windowId: 100, url: "https://b.example/", active: false },
+      { windowId: 100, url: "https://c.example/", active: false },
+    ]);
+  });
+
+  it("keeps the private window open when a URL could not be reopened", async () => {
+    const { api } = makeApi({
+      windows: [normalWin(2, { focused: true }), privateWin(1)],
+      tabs: { 1: [tab("https://a.example/"), tab("https://b.example/", { active: false })] },
+    });
+    api.tabs.create.mockRejectedValueOnce(new Error("Illegal URL"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.rescueWindow(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.windows.remove).not.toHaveBeenCalled();
+  });
+});
+
 describe("sweep", () => {
+  it("also rescues private popup windows", async () => {
+    const { api } = makeApi({
+      windows: [normalWin(2, { focused: true }), { ...privateWin(1), type: "popup" }],
+      tabs: { 1: [tab("https://a.example/")] },
+    });
+    const rescuer = createRescuer(api);
+
+    const done = rescuer.sweep();
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+
+    expect(api.windows.remove).toHaveBeenCalledWith(1);
+  });
+
   it("rescues existing private windows and leaves normal ones alone", async () => {
     const { api } = makeApi({
       windows: [normalWin(2, { focused: true }), privateWin(1)],

@@ -10,9 +10,9 @@ browser.windows.onCreated.addListener((win) => {
   if (win.incognito) guard(rescuer.rescueWindow(win.id));
 });
 
+// The top-level sweep below already runs when the page loads for either event.
 function onStartupOrInstall() {
   guard(rescuer.ensureAccess());
-  guard(rescuer.sweep());
 }
 
 browser.runtime.onStartup.addListener(onStartupOrInstall);

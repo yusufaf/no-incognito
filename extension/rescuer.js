@@ -24,8 +24,8 @@ export function createRescuer(api) {
   }
 
   async function collectTabs(windowId) {
-    let wake = null;
-    const onChange = () => wake?.();
+    let wake = () => {};
+    const onChange = () => wake();
     api.tabs.onUpdated.addListener(onChange, {
       windowId,
       properties: ["url", "status"],
@@ -33,15 +33,21 @@ export function createRescuer(api) {
     const started = Date.now();
     try {
       for (;;) {
+        // Created before the query so an update landing mid-query still wakes us.
+        const signal = new Promise((resolve) => {
+          wake = resolve;
+        });
         const tabs = await api.tabs.query({ windowId });
         const elapsed = Date.now() - started;
         if (elapsed >= MAX_WAIT_MS || !tabs.some((t) => isPending(t, elapsed))) {
           return tabs;
         }
-        await new Promise((resolve) => {
-          wake = resolve;
-          setTimeout(resolve, POLL_MS);
+        let timer;
+        const tick = new Promise((resolve) => {
+          timer = setTimeout(resolve, POLL_MS);
         });
+        await Promise.race([signal, tick]);
+        clearTimeout(timer);
       }
     } finally {
       api.tabs.onUpdated.removeListener(onChange);
@@ -76,14 +82,18 @@ export function createRescuer(api) {
     return pending;
   }
 
-  async function openUrls(windowId, urls) {
+  // Returns how many URLs could not be reopened.
+  async function openUrls(windowId, urls, { activateFirst }) {
+    let failed = 0;
     for (const [index, url] of urls.entries()) {
       try {
-        await api.tabs.create({ windowId, url, active: index === 0 });
+        await api.tabs.create({ windowId, url, active: activateFirst && index === 0 });
       } catch (error) {
+        failed += 1;
         console.warn("No Incognito: could not reopen", url, error);
       }
     }
+    return failed;
   }
 
   async function rescue(privateWindowId, tabs) {
@@ -100,6 +110,7 @@ export function createRescuer(api) {
       const plan = planRescue(urls, normal.length > 0);
 
       let target;
+      let failed = 0;
       if (plan.createWindow) {
         try {
           target = await startCreate(plan.open[0]);
@@ -114,13 +125,16 @@ export function createRescuer(api) {
           }
           return;
         }
-        await openUrls(target.id, plan.open.slice(1));
+        // The first URL is already the new window's active tab.
+        failed = await openUrls(target.id, plan.open.slice(1), { activateFirst: false });
       } else {
         target = normal.find((w) => w.focused) ?? normal[normal.length - 1];
-        await openUrls(target.id, plan.open);
+        failed = await openUrls(target.id, plan.open, { activateFirst: true });
       }
 
       await api.windows.update(target.id, { focused: true });
+      // Losing a tab is worse than leaving the private window open.
+      if (failed > 0) return;
       try {
         await api.windows.remove(privateWindowId);
       } catch {
@@ -144,7 +158,7 @@ export function createRescuer(api) {
   }
 
   async function sweep() {
-    const windows = await api.windows.getAll({ windowTypes: ["normal"] });
+    const windows = await api.windows.getAll();
     await Promise.all(windows.filter((w) => w.incognito).map((w) => rescueWindow(w.id)));
   }
 

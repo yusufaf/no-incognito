@@ -5,12 +5,12 @@ describe("isRescuableUrl", () => {
   it.each([
     "https://example.com/",
     "http://example.com/path?q=1#frag",
-    "ftp://files.example.com/a.txt",
   ])("accepts %s", (url) => {
     expect(isRescuableUrl(url)).toBe(true);
   });
 
   it.each([
+    "ftp://files.example.com/a.txt",
     "about:privatebrowsing",
     "about:blank",
     "about:newtab",

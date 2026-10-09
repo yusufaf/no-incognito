@@ -1,4 +1,4 @@
-const RESCUABLE_PROTOCOLS = new Set(["http:", "https:", "ftp:"]);
+const RESCUABLE_PROTOCOLS = new Set(["http:", "https:"]);
 
 export function isRescuableUrl(url) {
   if (typeof url !== "string") return false;

@@ -24,6 +24,13 @@ describe("manifest", () => {
     expect(gecko.data_collection_permissions).toEqual({ required: ["none"] });
   });
 
+  it("keeps the manifest version in step with package.json", () => {
+    const pkg = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    expect(manifest.version).toBe(pkg.version);
+  });
+
   it("references files that exist", () => {
     const files = [
       ...manifest.background.scripts,
