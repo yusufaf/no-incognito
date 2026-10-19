@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/yusufaf/no-incognito/compare/no-incognito-v0.2.0...no-incognito-v0.3.0) (2026-10-19)
+
+
+### Features
+
+* **zen-mod:** block private windows with a Sine script ([#2](https://github.com/yusufaf/no-incognito/issues/2)) ([1e75962](https://github.com/yusufaf/no-incognito/commit/1e75962b9aedbdfee2618ef49cdc43d06d5c0ef2))
+
 ## [0.2.0](https://github.com/yusufaf/no-incognito/compare/no-incognito-v0.1.0...no-incognito-v0.2.0) (2026-10-09)
 
 
