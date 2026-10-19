@@ -32,7 +32,16 @@ Zen Mods are CSS plus a `preferences.json`. Until the mod is in the Zen Mods reg
 
 In Firefox, copy `zen-mod/chrome.css` to `<profile>/chrome/userChrome.css` and set `toolkit.legacyUserProfileCustomizations.stylesheets` to `true`.
 
-What CSS cannot do: block the `Ctrl+Shift+P` shortcut, the Windows jump list entry (disable it with `browser.taskbar.lists.tasks.enabled = false` if you like), or the `-private` and `-private-window` command-line flags. The extension handles all of those.
+What CSS cannot do: block the `Ctrl+Shift+P` shortcut, the Windows jump list entry (disable it with `browser.taskbar.lists.tasks.enabled = false` if you like), or the `-private-window` command-line flag. The extension handles all of those, and so does the mod's script when it's installed through [Sine](https://github.com/CosmoCreeper/Sine). Neither can undo the `-private` flag, which makes every window private for that session, so there is no normal window to move tabs to.
+
+### With Sine: the mod's script
+
+Installed through Sine, the mod also runs `zen-mod/no-incognito.uc.js`, which does the extension's job from inside the browser:
+
+- `Ctrl+Shift+P`, the menu entries and Zen's URL-bar "Open private window" action do nothing, because they all go through `OpenBrowserWindow({ private: true })`, which the script blocks. No window opens, not even for a moment.
+- A private window that opens some other way (the jump list, `-private-window`, "Open Link in New Private Window") gets the same treatment as with the extension: its `http` and `https` tabs move to a normal window and the private window closes.
+
+So with Sine you don't need the extension, which is useful on Zen since release builds only install signed add-ons. If the extension is installed and allowed to run in private windows, the script leaves private windows to it, so tabs aren't reopened twice. Like the extension, it does nothing when the browser is set to always use private browsing.
 
 ## Development
 
@@ -48,7 +57,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org); rele
 
 ## Tested against
 
-Zen 1.23.1b (Firefox 157). The Zen mod hides elements by their IDs from Firefox 157 and may need updating when Zen or Firefox renames them.
+Zen 1.23.3b (Firefox 158) with Sine 2.3.0.3. The Zen mod hides elements by their IDs from Firefox 158 and may need updating when Zen or Firefox renames them.
 
 ## License
 

@@ -5,7 +5,16 @@
       "release-type": "node",
       "bump-minor-pre-major": true,
       "extra-files": [
-        { "type": "json", "path": "extension/manifest.json", "jsonpath": "$.version" }
+        {
+          "type": "json",
+          "path": "extension/manifest.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "zen-mod/theme.json",
+          "jsonpath": "$.version"
+        }
       ]
     }
   }
