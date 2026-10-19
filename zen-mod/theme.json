@@ -1,0 +1,17 @@
+{
+  "id": "no-incognito",
+  "name": "No Incognito",
+  "description": "Hides every \"open in private window\" entry, and with Sine also blocks Ctrl+Shift+P and closes any private window that opens.",
+  "homepage": "https://github.com/yusufaf/no-incognito/tree/main/zen-mod",
+  "author": "yusufaf",
+  "version": "0.2.0",
+  "style": {
+    "chrome": "chrome.css"
+  },
+  "preferences": "preferences.json",
+  "scripts": {
+    "zen-mod/no-incognito.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"]
+    }
+  }
+}
