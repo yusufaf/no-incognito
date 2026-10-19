@@ -101,11 +101,11 @@
   }
 
   async function rescue() {
+    const tabs = await collectTabs();
     // The extension does the same rescue; running both would open every tab
     // twice. It only sees private windows if it is allowed to run in them.
+    // Checked after the wait, since at startup it may not be running yet.
     if (WebExtensionPolicy.getByID(EXTENSION_ID)?.privateBrowsingAllowed) return;
-
-    const tabs = await collectTabs();
     const { win: target, created } = await findOrOpenNormalWindow();
     // A new window starts with a home page tab, which a rescued tab replaces.
     const placeholder = created ? target.gBrowser.selectedTab : null;
