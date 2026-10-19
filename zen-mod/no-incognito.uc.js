@@ -10,9 +10,6 @@
   const { BrowserWindowTracker } = ChromeUtils.importESModule(
     "resource:///modules/BrowserWindowTracker.sys.mjs",
   );
-  const { AddonManager } = ChromeUtils.importESModule(
-    "resource://gre/modules/AddonManager.sys.mjs",
-  );
 
   const EXTENSION_ID = "no-incognito@yusufaf.dev";
   const MAX_WAIT_MS = 20_000;
@@ -21,6 +18,9 @@
   // starts, so give it a moment before treating it as a genuinely empty tab.
   const SETTLE_MS = 250;
   const RESCUABLE_PROTOCOLS = new Set(["http:", "https:"]);
+  // Each private window runs its own rescue. This lets rescues that start
+  // while no normal window exists share the one window the first of them opens.
+  const OPENING_WINDOW = Symbol.for("no-incognito.opening-window");
 
   // Sine loads the script again into open windows when the mod is reinstalled.
   if (window.noIncognitoLoaded) return;
@@ -69,7 +69,11 @@
     for (;;) {
       const elapsed = Date.now() - started;
       if (elapsed >= MAX_WAIT_MS || !gBrowser.tabs.some((t) => isPending(t, elapsed))) {
-        return gBrowser.tabs.map((tab) => ({ tab, url: tab.linkedBrowser.currentURI?.spec }));
+        return gBrowser.tabs.map((tab) => ({
+          tab,
+          url: tab.linkedBrowser.currentURI?.spec,
+          pending: isPending(tab, elapsed),
+        }));
       }
       await sleep(POLL_MS);
     }
@@ -82,33 +86,54 @@
     return win;
   }
 
+  async function findOrOpenNormalWindow() {
+    const opening = BrowserWindowTracker[OPENING_WINDOW];
+    if (opening) return { win: await opening, created: false };
+    const existing = BrowserWindowTracker.getTopWindow({ private: false });
+    if (existing) return { win: existing, created: false };
+    const pending = openNormalWindow();
+    BrowserWindowTracker[OPENING_WINDOW] = pending;
+    try {
+      return { win: await pending, created: true };
+    } finally {
+      delete BrowserWindowTracker[OPENING_WINDOW];
+    }
+  }
+
   async function rescue() {
-    // The extension does the same rescue; running both would open every tab twice.
-    const extension = await AddonManager.getAddonByID(EXTENSION_ID);
-    if (extension?.isActive) return;
+    // The extension does the same rescue; running both would open every tab
+    // twice. It only sees private windows if it is allowed to run in them.
+    if (WebExtensionPolicy.getByID(EXTENSION_ID)?.privateBrowsingAllowed) return;
 
     const tabs = await collectTabs();
-    let target = BrowserWindowTracker.getTopWindow({ private: false });
+    const { win: target, created } = await findOrOpenNormalWindow();
     // A new window starts with a home page tab, which a rescued tab replaces.
-    let placeholder = null;
-    if (!target) {
-      target = await openNormalWindow();
-      placeholder = target.gBrowser.selectedTab;
-    }
+    const placeholder = created ? target.gBrowser.selectedTab : null;
 
     let failed = 0;
-    let first = true;
     const copied = [];
-    for (const { tab, url } of tabs) {
+    for (const { tab, url, pending } of tabs) {
+      // Still loading after MAX_WAIT_MS, so its real URL is unknown.
+      if (pending) {
+        failed += 1;
+        continue;
+      }
       if (!isRescuable(url)) continue;
+      let reopened;
       try {
-        const reopened = target.gBrowser.addTrustedTab(url);
-        if (first) target.gBrowser.selectedTab = reopened;
-        first = false;
-        copied.push(tab);
+        reopened = target.gBrowser.addTrustedTab(url);
       } catch (error) {
         failed += 1;
         console.warn("No Incognito: could not reopen", url, error);
+        continue;
+      }
+      copied.push(tab);
+      if (copied.length === 1) {
+        try {
+          target.gBrowser.selectedTab = reopened;
+        } catch {
+          // Selecting is cosmetic; the tab is already reopened.
+        }
       }
     }
 
